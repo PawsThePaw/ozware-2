@@ -82,7 +82,7 @@ local function RPTXOJ_fake_script() -- TextButton.LocalScript
 		local NW_Size = UDim2.new(0, LB_Size.X, 0, LB_Size.Y)
 		if not state then
 			script.Parent.Text = "+"
-			game:GetService("TweenService"):Create(script.Parent.Parent.Parent, TweenInfo.new(0.5, Enum.EasingStyle.Linear), {
+			game:GetService("TweenService"):Create(script.Parent.Parent.Parent, TweenInfo.new(0.2, Enum.EasingStyle.Linear), {
 				BackgroundTransparency = 1
 			}):Play()
 			for i, v in pairs(script.Parent.Parent.Parent:GetChildren()) do
@@ -93,7 +93,7 @@ local function RPTXOJ_fake_script() -- TextButton.LocalScript
 			end
 		else
 			script.Parent.Text = "_"
-			game:GetService("TweenService"):Create(script.Parent.Parent.Parent, TweenInfo.new(0.5, Enum.EasingStyle.Linear), {
+			game:GetService("TweenService"):Create(script.Parent.Parent.Parent, TweenInfo.new(0.3, Enum.EasingStyle.Linear), {
 				BackgroundTransparency = 0
 			}):Play()
 			for i, v in pairs(script.Parent.Parent.Parent:GetChildren()) do
