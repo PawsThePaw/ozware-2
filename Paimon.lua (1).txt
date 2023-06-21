@@ -162,4 +162,5 @@ local function QNWNII_fake_script() -- Frame.LocalScript
 	script.Parent.Draggable = true
 end
 coroutine.wrap(QNWNII_fake_script)()
+wait(2)
 ScreenGui.ResetOnSpawn = false
