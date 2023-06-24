@@ -1,0 +1,186 @@
+getgenv().Camlock = {
+    Main = {
+        Keybind = "c",
+        SmartPred = 0.12,
+        Smoothness = true,
+        SmoothnessAmount = 0.100,
+        Prediction = true,
+        AirSmoothness = false,
+        AirSmoothnessValue = 0.075,
+        Stickiness = true,
+        StickinessAmount = 0.100,
+        BezierCurveCam = true,
+        BezierCurveOrder = 3,
+        BezierCurveControlPoint1 = Vector3.new(0, 5, 0),
+        BezierCurveControlPoint2 = Vector3.new(0, 5, 0),
+        ClosestPart = true,
+        PredictiveAim = true,
+        ObstacleAvoidance = true,
+    },
+    Others = {
+        AirHitPart = "UpperTorso",
+        HitPart = "UpperTorso",
+        Radius = 30,
+        TP = true,
+        FP = true,
+        SpamCamToggle = true,
+        SpamCamValue = 0.5
+    },
+    Checks = {
+        TeamCheck = false,
+        WallCheck = true,
+        UnlockOnKO = true,
+        JumpCheck = true
+    },
+    Shake = {
+        Enabled = false,
+        X = 0,
+        Y = 0,
+        Z = 0,
+        Amplifier = 1,
+        EaseShake = true,
+        ShakeStyle = Enum.EasingStyle.Circular,
+        ShakeDirection = Enum.EasingDirection.InOut,
+    },
+    Resolver = {
+        Enabled = false,
+        Frequency = 60,
+        DeltaTime = 1 / 60,
+        Acceleration = Vector3.new(0, -workspace.Gravity, 0),
+        BeforeTime = 0.5,
+        AfterTime = 0.5
+    },
+    Style = {
+        RegEasing = Enum.EasingStyle.Circular,
+        RegDirection = Enum.EasingDirection.InOut,
+        AirEasing = Enum.EasingStyle.Sine,
+        AirDirection = Enum.EasingDirection.In
+    }
+}
+local a, b, c = game:GetService("Players"), game:GetService("UserInputService"), game:GetService("RunService")
+local LocalPlayer, d, e = a.LocalPlayer, LocalPlayer:GetMouse(), workspace.CurrentCamera
+local f, g, h = true, false, false
+local i
+d.KeyDown:Connect(function(j)
+if not b:GetFocusedTextBox() then
+    if j == getgenv().Camlock.Main.Keybind and not i then
+        local k = findNearestTarget()
+        if k then
+            i, g = k, true
+        end
+    elseif j == getgenv().Camlock.Main.Keybind and i then
+        i, g = nil, false
+    end
+end
+end)
+local elapsedSpamCamTime = 0
+local function bezierCurve(t, p0, p1, p2, p3)
+    if getgenv().Camlock.Main.BezierCurveOrder == 2 then
+        return (1 - t) * (1 - t) * p0 + 2 * (1 - t) * t * p1 + t * t * p2
+    elseif getgenv().Camlock.Main.BezierCurveOrder == 3 then
+        return (1 - t) * (1 - t) * (1 - t) * p0 + 3 * (1 - t) * (1 - t) * t * p1 + 3 * (1 - t) * t * t * p2 + t * t * t * p3
+    else
+        return p0
+    end
+end
+c.RenderStepped:Connect(function(deltaTime)
+if getgenv().Camlock.Others.SpamCamToggle then
+    elapsedSpamCamTime = elapsedSpamCamTime + deltaTime
+    if elapsedSpamCamTime >= getgenv().Camlock.Others.SpamCamValue then
+        g = not g
+        elapsedSpamCamTime = 0
+        if g then
+            getgenv().Camlock.Main.Smoothness = false
+        else
+            getgenv().Camlock.Main.Smoothness = true
+        end
+    end
+end
+h = getgenv().Camlock.Others.TP and (e.Focus.p - e.CFrame.p).Magnitude > 1 or getgenv().Camlock.Others.FP and (e.Focus.p - e.CFrame.p).Magnitude <= 1
+if f and g and h and i and i.Character and i.Character:FindFirstChild(getgenv().Camlock.Others.HitPart) then
+    local l = i.Character[getgenv().Camlock.Others.HitPart].Position
+    if getgenv().Camlock.Main.Prediction or getgenv().Camlock.Resolver.Enabled then
+        local m = getgenv().Camlock.Main.SmartPred
+        if getgenv().Camlock.Resolver.Enabled then
+            local n = math.floor(getgenv().Camlock.Resolver.Frequency * (getgenv().Camlock.Resolver.BeforeTime + getgenv().Camlock.Resolver.AfterTime))
+            local o = math.floor(getgenv().Camlock.Resolver.Frequency * getgenv().Camlock.Resolver.BeforeTime)
+            local p = i.Character[getgenv().Camlock.Others.HitPart].Velocity
+            local q = getgenv().Camlock.Resolver.Acceleration
+            local r = getgenv().Camlock.Resolver.DeltaTime
+            for s = 1, n do
+                p = p + q * r
+                if s > o then
+                    l = l + p * r
+                end
+            end
+        else
+            l = l + i.Character[getgenv().Camlock.Others.HitPart].Velocity * m
+        end
+    end
+    if getgenv().Camlock.Main.ClosestPart then
+        local closestPart, minDist = nil, math.huge
+        for _, part in ipairs(target.Character:GetChildren()) do
+            if part:IsA("BasePart") then
+                local dist = (camera.CFrame.p - part.Position).Magnitude
+                if dist < minDist then
+                    minDist, closestPart = dist, part
+                end
+            end
+        end
+        targetPosition = closestPart.Position
+    end
+    if getgenv().Camlock.Main.PredictiveAim and getgenv().Camlock.Main.ObstacleAvoidance then
+        local targetVelocity = target.Character.HumanoidRootPart.Velocity
+        local distanceToTarget = (camera.CFrame.p - targetPosition).Magnitude
+        local projectileSpeed = 100
+        local timeToTarget = distanceToTarget / projectileSpeed
+        local predictedPosition = targetPosition + targetVelocity * timeToTarget
+        local directionToPredictedPosition = (predictedPosition - camera.CFrame.p).Unit
+        local ray = Ray.new(camera.CFrame.p, directionToPredictedPosition * distanceToTarget)
+        local hitPart, hitPosition = workspace:FindPartOnRayWithIgnoreList(ray, {LocalPlayer.Character})
+        if hitPart and hitPart:IsDescendantOf(target.Character) == false then
+            local hitDirection = (hitPosition - camera.CFrame.p).Unit
+            local avoidDirection = directionToPredictedPosition + hitDirection
+            targetPosition = targetPosition + avoidDirection
+        else
+            targetPosition = predictedPosition
+        end
+    end
+    local t = CFrame.new(e.CFrame.p, l)
+    local u = getgenv().Camlock.Main.SmoothnessAmount
+    if getgenv().Camlock.Main.AirSmoothness and i.Character.Humanoid.FloorMaterial == Enum.Material.Air then
+        u = getgenv().Camlock.Main.AirSmoothnessValue
+    end
+    local p0 = e.CFrame
+    local p1 = p0 * getgenv().Camlock.Main.BezierCurveControlPoint1
+    local p2 = p0 * getgenv().Camlock.Main.BezierCurveControlPoint2
+    local p3 = t
+    local easingStyle = getgenv().Camlock.Style.RegEasing
+    local easingDirection = getgenv().Camlock.Style.RegDirection
+    if i.Character.Humanoid.FloorMaterial == Enum.Material.Air then
+        easingStyle = getgenv().Camlock.Style.AirEasing
+        easingDirection = getgenv().Camlock.Style.AirDirection
+    end
+    if getgenv().Camlock.Main.Smoothness then
+        local v = e.CFrame:lerp(t, u)
+        e.CFrame = bezierCurve(u, p0, p1, p2, p3)
+        e.Focus = CFrame.new(e.CFrame.p + v.lookVector)
+    else
+        e.CFrame = t
+        e.Focus = CFrame.new(e.CFrame.p + t.lookVector)
+    end
+end
+end)
+function findNearestTarget()
+    local nearestPlayer, nearestDistance
+    for _, player in ipairs(a:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(getgenv().Camlock.Others.HitPart) and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+            local distance = (player.Character[getgenv().Camlock.Others.HitPart].Position - LocalPlayer.Character.Head.Position).Magnitude
+            if not nearestDistance or distance < nearestDistance then
+                nearestPlayer = player
+                nearestDistance = distance
+            end
+        end
+    end
+    return nearestPlayer
+end
